@@ -5,6 +5,8 @@ import (
     "fmt"
 )
 
+const ObaoTempStore = "/tmp/"
+
 type MetaData struct {
     // The CID of the file as a string
     Cid string
