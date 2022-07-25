@@ -4,6 +4,7 @@ import (
     "fmt"
     "os/exec"
     "strconv"
+    "strings"
 
     "src/oracle_storage/backend"
 )
@@ -42,7 +43,7 @@ func getSize(file_path string) (int64) {
         return 0
     }
 
-    val, err := strconv.Atoi(string(stdout))
+    val, err := strconv.Atoi(strings.Split(string(stdout), "\n")[0])
     if err != nil {
         fmt.Println(err.Error())
         return 0
