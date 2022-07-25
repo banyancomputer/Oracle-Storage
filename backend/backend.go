@@ -4,7 +4,9 @@ package backend
 import (
     "fmt"
     "context"
-    "flag"
+//     "flag"
+    "bytes"
+    "io"
     "os"
     "time"
     "strings"
@@ -50,10 +52,10 @@ func WriteMetaData(meta_data MetaData) {
     var bucket, key string
     var timeout time.Duration
 
-    flag.StringVar(&bucket, "b", "", "Bucket name.")
-    flag.StringVar(&key, "k", "", "Object key name.")
-    flag.DurationVar(&timeout, "d", 0, "Upload timeout.")
-    flag.Parse()
+//     flag.StringVar(&bucket, "b", "", "Bucket name.")
+//     flag.StringVar(&key, "k", "", "Object key name.")
+//     flag.DurationVar(&timeout, "d", 0, "Upload timeout.")
+//     flag.Parse()
 
     sess := session.Must(session.NewSession())
     svc := s3.New(sess)
@@ -88,10 +90,65 @@ func WriteMetaData(meta_data MetaData) {
     fmt.Printf("successfully uploaded file to %s/%s\n", bucket, key)
 }
 
-func WriteObao(obao_name string) {
-    obao_path := "/tmp/" + obao_name
+func WriteObao(hash string) {
+    obao_path := "/tmp/" + hash
 
     fmt.Println("Writing Obao:\n" +
         "Obao_name: " + obao_path + "\n")
-    // TODO - write the obao file to S3
+
+    // Source: https://github.com/aws/aws-sdk-go
+    // Write the metadata to S3
+    var bucket, key string
+    var timeout time.Duration
+
+//     flag.StringVar(&bucket, "b", "", "Bucket name.")
+//     flag.StringVar(&key, "k", "", "Object key name.")
+//     flag.DurationVar(&timeout, "d", 0, "Upload timeout.")
+//     flag.Parse()
+
+    sess := session.Must(session.NewSession())
+    svc := s3.New(sess)
+    ctx := context.Background()
+    var cancelFn func()
+    if timeout > 0 {
+        ctx, cancelFn = context.WithTimeout(ctx, timeout)
+    }
+    // Ensure the context is canceled to prevent leaking.
+    // See context package for more information, https://golang.org/pkg/context/
+    if cancelFn != nil {
+        defer cancelFn()
+    }
+
+    // Read the contents of the obao file into a buffer
+    body := &bytes.Buffer{}
+    file, err := os.Open(obao_path)
+    if err != nil {
+        fmt.Println("Error opening file:", err)
+        os.Exit(1)
+    }
+    defer file.Close()
+    _, err = io.Copy(body, file)
+    if err != nil {
+        fmt.Println("Error copying file:", err)
+        os.Exit(1)
+    }
+
+    // Upload the body buffer to S3
+    _, err = svc.PutObjectWithContext(ctx, &s3.PutObjectInput{
+        Bucket: aws.String(obao_bucket),
+        Key:    aws.String(hash),
+        Body:   aws.ReadSeekCloser(body),
+    })
+    if err != nil {
+        if aerr, ok := err.(awserr.Error); ok && aerr.Code() == request.CanceledErrorCode {
+            // If the SDK can determine the request or retry delay was canceled
+            // by a context the CanceledErrorCode error code will be returned.
+            fmt.Fprintf(os.Stderr, "upload canceled due to timeout, %v\n", err)
+        } else {
+            fmt.Fprintf(os.Stderr, "failed to upload object, %v\n", err)
+        }
+        os.Exit(1)
+    }
+
+    fmt.Printf("successfully uploaded file to %s/%s\n", bucket, key)
 }

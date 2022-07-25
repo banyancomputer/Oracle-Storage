@@ -13,7 +13,7 @@ func oracle_storage(file_path string) {
     meta_data := processing.ProcessFile(file_path)
 
     // Upload the file meta_data to S3
-    backend.WriteMetaData(meta_data)
+//     backend.WriteMetaData(meta_data)
     // Upload the obao file to S3
     backend.WriteObao(meta_data.Obao_name)
 
