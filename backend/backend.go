@@ -1,6 +1,8 @@
 // A package for updating our Backend state
 package backend
 
+const
+
 import (
     "fmt"
 )
