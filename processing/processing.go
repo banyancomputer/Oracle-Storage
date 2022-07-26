@@ -9,6 +9,9 @@ import (
     "src/oracle_storage/backend"
 )
 
+/* TODO: Transition from calling these as command lines args */
+
+// Get the CID of a file
 func getCID(file_path string) string {
     cmd := exec.Command("ipfs", "add", file_path, "-q", "--cid-version", "1")
     stdout, err := cmd.Output()
@@ -21,6 +24,7 @@ func getCID(file_path string) string {
     return string(stdout)
 }
 
+// Get the Blake3 hash of a file
 func getHash(file_path string) (string) {
     cmd := exec.Command("bao", "hash", file_path)
     stdout, err := cmd.Output()
@@ -33,6 +37,7 @@ func getHash(file_path string) (string) {
     return string(stdout)
 }
 
+// Get the size of a file
 func getSize(file_path string) (int64) {
     // Determine the size of the file
     cmd := exec.Command("stat", "-c%s", file_path)
@@ -51,6 +56,7 @@ func getSize(file_path string) (int64) {
     return int64(val)
 }
 
+// Encodes a file into an obao file
 func encodeObao(file_path string, hash string) (error) {
     // Determine the path of the obao file
     obao_path := backend.ObaoTempStore + hash
@@ -85,6 +91,8 @@ func ProcessFile(file_path string) (meta_data backend.MetaData) {
     }
 
     // Return the meta_data
+    // TODO: Be able to account for different endpoints
+    // But also keep in mind we might be getting that from our Smart Contract
     // For now just set the endpoint to "localhost" and the port to 5051
     return backend.MetaData{cid, hash, hash, size, "localhost", 5051}
 }
