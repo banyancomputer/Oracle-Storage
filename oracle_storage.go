@@ -10,14 +10,12 @@ import (
 // Takes a file path in, processes it, and returns uploads data to S3.
 func oracle_storage(file_path string) {
     // Process the file
-    meta_data := processing.ProcessFile(file_path)
+    deal_id, meta_data := processing.ProcessFile(file_path)
 
-    // Upload the file meta_data to S3
-//     backend.WriteMetaData(meta_data)
-    // Upload the obao file to S3
-    backend.WriteObao(meta_data.Obao_name)
+    // Write the data to S3
+    backend.WriteToS3(deal_id, meta_data)
 
-    fmt.Println("Done!")
+    fmt.Println("Uploaded new deal: ", deal_id)
 }
 
 func main() {

@@ -1,7 +1,7 @@
 variable "stage" {
-    description = "The stage of the pipeline the application is deployed to."
-    default = "dev" # dev, test, prod
-    type = string
+  description = "The stage of the pipeline the application is deployed to."
+  type        = string
+  default     = "dev" # dev, test, prod
 }
 
 terraform {
@@ -23,7 +23,7 @@ resource "random_string" "random" {
 }
 
 provider "aws" {
-  region  = "us-east-2"
+  region = "us-east-2"
   # The profile to use for the AWS CLI. Make sure you have this profile in your ~/.aws/credentials file.
   # This profile should have access to the S3 bucket you want to use for the deployment.
   # See: https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html
@@ -33,11 +33,11 @@ provider "aws" {
 # A bucket to store our File Meta-Data
 # TODO: This should be stored and retrieved from a Smart Contract.
 resource "aws_s3_bucket" "meta-data" {
-  bucket = "meta-data-bucket-${stage}-${random_string.random.result}"
+  bucket        = "meta-data-bucket-${var.stage}-${random_string.random.result}"
   force_destroy = true
   tags = {
-    Name        = "meta-data-bucket"
-    Environment = "${stage}"
+    Name          = "meta-data-bucket"
+    Environment   = "${var.stage}"
     Deployment_ID = "${random_string.random.result}"
   }
 }
@@ -45,11 +45,11 @@ resource "aws_s3_bucket" "meta-data" {
 # A bucket to store our obao files
 # TODO: This should be stored and retrieved from a Storage Provider.
 resource "aws_s3_bucket" "obao-file" {
-  bucket = "obao-file-bucket-${stage}-${random_string.random.result}"
+  bucket        = "obao-file-bucket-${var.stage}-${random_string.random.result}"
   force_destroy = true
   tags = {
-    Name        = "obao-file-bucket"
-    Environment = "${stage}"
+    Name          = "obao-file-bucket"
+    Environment   = "${var.stage}"
     Deployment_ID = "${random_string.random.result}"
   }
 }
@@ -57,11 +57,11 @@ resource "aws_s3_bucket" "obao-file" {
 # A bucket to store our obao files
 # TODO: This should be stored and retrieved from a Storage Provider.
 resource "aws_s3_bucket" "endpoint" {
-  bucket = "endpoint-bucket-${stage}-${random_string.random.result}"
+  bucket        = "endpoint-bucket-${var.stage}-${random_string.random.result}"
   force_destroy = true
   tags = {
-    Name        = "endpoint-bucket"
-    Environment = "${stage}"
+    Name          = "endpoint-bucket"
+    Environment   = "${var.stage}"
     Deployment_ID = "${random_string.random.result}"
   }
 }

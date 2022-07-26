@@ -4,7 +4,6 @@ package backend
 import (
     "fmt"
     "context"
-    "flag"
     "bytes"
     "io"
     "os"
@@ -13,38 +12,41 @@ import (
 
     // AWS SDK Go packages:
     "github.com/aws/aws-sdk-go/aws"
-    "github.com/aws/aws-sdk-go/aws/awserr"
-    "github.com/aws/aws-sdk-go/aws/request"
     "github.com/aws/aws-sdk-go/aws/session"
     "github.com/aws/aws-sdk-go/service/s3"
 )
-
-// TODO: Make these configurable
-// Our S3 bucket names
-const meta_data_bucket = "meta-data-test-bucket-jmdagwystvo2jt4b"
-const obao_bucket = "obao-test-bucket-jmdagwystvo2jt4b"
-
-// Where we temporarily store the Obao file
-const ObaoTempStore = "/tmp/"
 
 // What data we need to write to S3
 type MetaData struct {
     // The CID of the file as a string
     Cid string
-    // The name of an obao file
-    Obao_name string
     // The blake3 hash of the file as a string
     Hash string
     // The size of the file
     Size int64
-    // The endpoint of where the file will be stored
-    Endpoint string
-    // The port of where the file will be stored
-    Port int16
 }
 
-// Write our Meta-Data and Obao file to S3 into their respective buckets
-func WriteToS3(meta_data MetaData) {
+// What fields define an endpoint
+type Endpoint struct {
+    Host string
+    Port int16
+
+    // Maybe we add more things here later, for backups and whatnot
+}
+
+// Where we temporarily store the Obao file
+const ObaoTempStore = "/tmp/"
+
+// TODO: Make these configurable
+// Our S3 bucket names
+const meta_data_bucket = "meta-data-bucket-dev-9lz7kptz8kihj7qx"
+const obao_bucket = "obao-file-bucket-dev-9lz7kptz8kihj7qx"
+const endpoint_bucket = "endpoint-bucket-dev-9lz7kptz8kihj7qx"
+const timeout = 10 * time.Second
+
+// Write our Meta-Data, Obao file, and Endpoint to S3 into their respective buckets
+// All data is indexed by the deal ID
+func WriteToS3(deal_id string, meta_data MetaData) {
     // Initialize the S3 service client and context for the request
     sess := session.Must(session.NewSession())
     svc := s3.New(sess)
@@ -59,35 +61,40 @@ func WriteToS3(meta_data MetaData) {
     }
 
     // Write the MetaData to S3
-    WriteMetaData(meta_data)
-    // Write the Obao file to S3
-    WriteObao(meta_data.Obao_name)
+    err := write_meta_data(deal_id, meta_data, svc, ctx)
+    if err != nil {
+        fmt.Println("Error writing meta-data:", err)
+    }
+    // Write the Obao file to S3. The file is named by its deal_id and is stored in the ObaoTempStore
+    err = write_obao(deal_id, ObaoTempStore + deal_id, svc, ctx)
+    if err != nil {
+        fmt.Println("Error writing obao file:", err)
+    }
+    // Write the endpoint to S3. TODO: This eventually needs to be updated to be a real endpoint
+    default_endpoint := Endpoint{Host: "localhost", Port: 5051}
+    err = write_endpoint(deal_id, default_endpoint, svc, ctx)
+    if err != nil {
+        fmt.Println("Error writing endpoint:", err)
+    }
 }
 
 // Writes the metadata to S3
-func write_meta_data(meta_data MetaData, svc *s3.S3, ctx context.Context) (err error) {
-    // Return the hash and size of the file
-    fmt.Println("Writing MetaData:\n" +
-        "Cid: " + meta_data.Cid + "\n" +
-        "Obao_name: " + meta_data.Obao_name + "\n" +
-        "Hash: " + meta_data.Hash + "\n" +
-        fmt.Sprintf("Size: %d", meta_data.Size) + "\n")
-
+func write_meta_data(deal_id string, meta_data MetaData, svc *s3.S3, ctx context.Context) (error) {
     // Upload the MetaData to S3 as a JSON object
     _, err := svc.PutObjectWithContext(ctx, &s3.PutObjectInput{
         Bucket: aws.String(meta_data_bucket),
-        Key:    aws.String(meta_data.Cid),
+        Key:    aws.String(deal_id),
         Body:   aws.ReadSeekCloser(
             strings.NewReader(
                 fmt.Sprintf(
-                    "{
-                        \"cid\":\"%s\",
-                        \"hash\":\"%s\",
-                        \"obao_name\":\"%s\",
-                        \"size\":%d
-                    }", meta_data.Cid, meta_data.Obao_name, meta_data.Hash, meta_data.Size)
-                )
+                    `{
+                        "cid": "%s",
+                        "hash":"%s",
+                        "size":%d,
+                    }`, meta_data.Cid, meta_data.Hash, meta_data.Size,
+                ),
             ),
+        ),
     })
     return err
 }
@@ -104,14 +111,15 @@ func read_obao(obao_path string) (obao_bytes []byte, err error) {
     _, err = io.Copy(body, file)
     if err != nil {
         fmt.Println("Error copying file:", err)
-        os.Exit(1)
+        return nil, err
     }
 
     // Return the bytes
     return body.Bytes(), nil
 }
 
-func write_obao(obao_path string, svc *s3.S3, ctx context.Context) (err error) {
+// Write the contents of an obao file to S3, indexed by the file's CID
+func write_obao(deal_id string, obao_path string, svc *s3.S3, ctx context.Context) (error) {
     // Read the contents of the obao file into a buffer
     body, err := read_obao(obao_path)
     if err != nil {
@@ -121,8 +129,28 @@ func write_obao(obao_path string, svc *s3.S3, ctx context.Context) (err error) {
     // Upload the body buffer to S3
     _, err = svc.PutObjectWithContext(ctx, &s3.PutObjectInput{
         Bucket: aws.String(obao_bucket),
-        Key:    aws.String(hash),
-        Body:   aws.ReadSeekCloser(body),
+        Key:    aws.String(deal_id),
+        Body:   aws.ReadSeekCloser(bytes.NewReader(body)),
+    })
+    return err
+}
+
+// Write an object that indexes an endpoint for a file by its CID
+func write_endpoint(deal_id string, endpoint Endpoint, svc *s3.S3, ctx context.Context) (error) {
+    // Upload the endpoint to S3
+    _, err := svc.PutObjectWithContext(ctx, &s3.PutObjectInput{
+        Bucket: aws.String(endpoint_bucket),
+        Key:    aws.String(deal_id),
+        Body:   aws.ReadSeekCloser(
+            strings.NewReader(
+                fmt.Sprintf(
+                    `{
+                        "host": "%s",
+                        "port": %d,
+                    }`, endpoint.Host, endpoint.Port,
+                ),
+            ),
+        ),
     })
     return err
 }
