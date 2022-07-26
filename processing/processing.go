@@ -56,28 +56,12 @@ func getSize(file_path string) (int64) {
     return int64(val)
 }
 
-// Get a Deterministic ID for a storage deal
-// TODO: Get this to reflect the actual deal-id on the blockchain
-func getDealId(cid string, hash string, size int64) (string) {
-//     // Generate a Sha256 hash of the CID, Blake3 hash, and size
-//     deal_hash := cid + hash + strconv.FormatInt(size, 10)
-//     // Generate a Sha246 hash of the deal_hash
-//     cmd := exec.Command("sha256sum", "-b", deal_hash)
-//     stdout, err := cmd.Output()
-//     if err != nil {
-//         fmt.Println(err.Error())
-//         return ""
-//     }
-//     return string(stdout)
-    return cid
-}
-
 // Encodes a file into an obao file
 // This file is saved in the system's 'ObaoTempStore' directory, which is 'temp/'
-// The deal id of the file is used to name the file
-func encodeObao(file_path string, deal_id string) (error) {
+// The  cid of the file is used to name the file
+func encodeObao(file_path string, cid string) (error) {
     // Determine the path of the obao file
-    obao_path := backend.ObaoTempStore + deal_id
+    obao_path := backend.ObaoTempStore + cid
     // Generate an obao file for the file
     cmd := exec.Command("bao", "encode", file_path, "--outboard", obao_path)
     _, err := cmd.Output()
@@ -103,10 +87,11 @@ func ProcessFile(file_path string) (string, backend.MetaData) {
     hash := getHash(file_path)
 
     // Generate a deterministic deal id for the file
-    deal_id := getDealId(cid, hash, size)
+    // For now, this is just the CID
+    deal_id := cid
 
     // Encode the file into an obao file
-    err := encodeObao(file_path, deal_id)
+    err := encodeObao(file_path, cid)
     if err != nil {
         fmt.Println(err.Error())
     }

@@ -65,8 +65,8 @@ func WriteToS3(deal_id string, meta_data MetaData) {
     if err != nil {
         fmt.Println("Error writing meta-data:", err)
     }
-    // Write the Obao file to S3. The file is named by its deal_id and is stored in the ObaoTempStore
-    err = write_obao(deal_id, ObaoTempStore + deal_id, svc, ctx)
+    // Write the Obao file to S3. The file is named by its CID and is stored in the ObaoTempStore
+    err = write_obao(meta_data.Cid, ObaoTempStore + meta_data.Cid, svc, ctx)
     if err != nil {
         fmt.Println("Error writing obao file:", err)
     }
@@ -99,6 +99,26 @@ func write_meta_data(deal_id string, meta_data MetaData, svc *s3.S3, ctx context
     return err
 }
 
+// Write an object that indexes an endpoint for a file by its deal_id
+func write_endpoint(deal_id string, endpoint Endpoint, svc *s3.S3, ctx context.Context) (error) {
+    // Upload the endpoint to S3
+    _, err := svc.PutObjectWithContext(ctx, &s3.PutObjectInput{
+        Bucket: aws.String(endpoint_bucket),
+        Key:    aws.String(deal_id),
+        Body:   aws.ReadSeekCloser(
+            strings.NewReader(
+                fmt.Sprintf(
+                    `{
+                        "host": "%s",
+                        "port": %d,
+                    }`, endpoint.Host, endpoint.Port,
+                ),
+            ),
+        ),
+    })
+    return err
+}
+
 // Read in obao file an return the bytes
 func read_obao(obao_path string) (obao_bytes []byte, err error) {
     // Read the contents of the obao file into a buffer
@@ -119,7 +139,7 @@ func read_obao(obao_path string) (obao_bytes []byte, err error) {
 }
 
 // Write the contents of an obao file to S3, indexed by the file's CID
-func write_obao(deal_id string, obao_path string, svc *s3.S3, ctx context.Context) (error) {
+func write_obao(cid string, obao_path string, svc *s3.S3, ctx context.Context) (error) {
     // Read the contents of the obao file into a buffer
     body, err := read_obao(obao_path)
     if err != nil {
@@ -129,28 +149,8 @@ func write_obao(deal_id string, obao_path string, svc *s3.S3, ctx context.Contex
     // Upload the body buffer to S3
     _, err = svc.PutObjectWithContext(ctx, &s3.PutObjectInput{
         Bucket: aws.String(obao_bucket),
-        Key:    aws.String(deal_id),
+        Key:    aws.String(cid),
         Body:   aws.ReadSeekCloser(bytes.NewReader(body)),
-    })
-    return err
-}
-
-// Write an object that indexes an endpoint for a file by its CID
-func write_endpoint(deal_id string, endpoint Endpoint, svc *s3.S3, ctx context.Context) (error) {
-    // Upload the endpoint to S3
-    _, err := svc.PutObjectWithContext(ctx, &s3.PutObjectInput{
-        Bucket: aws.String(endpoint_bucket),
-        Key:    aws.String(deal_id),
-        Body:   aws.ReadSeekCloser(
-            strings.NewReader(
-                fmt.Sprintf(
-                    `{
-                        "host": "%s",
-                        "port": %d,
-                    }`, endpoint.Host, endpoint.Port,
-                ),
-            ),
-        ),
     })
     return err
 }
