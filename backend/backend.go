@@ -42,13 +42,18 @@ const ObaoTempStore = "/tmp/"
 const meta_data_bucket = "meta-data-bucket-dev-9lz7kptz8kihj7qx"
 const obao_bucket = "obao-file-bucket-dev-9lz7kptz8kihj7qx"
 const endpoint_bucket = "endpoint-bucket-dev-9lz7kptz8kihj7qx"
-const timeout = 10 * time.Second
+// Our AWS region
+const aws_region = "us-east-2"
+// The timeout for our requests
+const timeout = time.Duration(10) * time.Second
 
 // Write our Meta-Data, Obao file, and Endpoint to S3 into their respective buckets
 // All data is indexed by the deal ID
 func WriteToS3(deal_id string, meta_data MetaData) {
     // Initialize the S3 service client and context for the request
-    sess := session.Must(session.NewSession())
+    sess := session.Must(session.NewSession(&aws.Config{
+        Region: aws.String(aws_region)},
+    ))
     svc := s3.New(sess)
     ctx := context.Background()
     var cancelFn func()
@@ -71,7 +76,7 @@ func WriteToS3(deal_id string, meta_data MetaData) {
         fmt.Println("Error writing obao file:", err)
     }
     // Write the endpoint to S3. TODO: This eventually needs to be updated to be a real endpoint
-    default_endpoint := Endpoint{Host: "localhost", Port: 5051}
+    default_endpoint := Endpoint{Host: "localhost", Port: 5001}
     err = write_endpoint(deal_id, default_endpoint, svc, ctx)
     if err != nil {
         fmt.Println("Error writing endpoint:", err)
@@ -87,11 +92,8 @@ func write_meta_data(deal_id string, meta_data MetaData, svc *s3.S3, ctx context
         Body:   aws.ReadSeekCloser(
             strings.NewReader(
                 fmt.Sprintf(
-                    `{
-                        "cid": "%s",
-                        "hash":"%s",
-                        "size":%d,
-                    }`, meta_data.Cid, meta_data.Hash, meta_data.Size,
+                    `{"cid": "%s","hash":"%s","size":%d}`,
+                    meta_data.Cid, meta_data.Hash, meta_data.Size,
                 ),
             ),
         ),
@@ -108,10 +110,8 @@ func write_endpoint(deal_id string, endpoint Endpoint, svc *s3.S3, ctx context.C
         Body:   aws.ReadSeekCloser(
             strings.NewReader(
                 fmt.Sprintf(
-                    `{
-                        "host": "%s",
-                        "port": %d,
-                    }`, endpoint.Host, endpoint.Port,
+                    `{"host": "%s","port": %d}`,
+                    endpoint.Host, endpoint.Port,
                 ),
             ),
         ),

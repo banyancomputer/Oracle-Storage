@@ -21,7 +21,7 @@ func getCID(file_path string) (string) {
         return ""
     }
 
-    return string(stdout)
+    return strings.Split(string(stdout), "\n")[0]
 }
 
 // Get the Blake3 hash of a file
@@ -34,7 +34,7 @@ func getHash(file_path string) (string) {
         return ""
     }
 
-    return string(stdout)
+    return strings.Split(string(stdout), "\n")[0]
 }
 
 // Get the size of a file
