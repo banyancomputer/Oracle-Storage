@@ -19,5 +19,6 @@ func oracle_storage(file_path string) {
 }
 
 func main() {
+    // Test with a file in the current directory
     oracle_storage("./test/ethereum.pdf")
 }
