@@ -1,4 +1,4 @@
-module src/oracle_storage
+module github.com/banyancomputer/oracle-storage
 
 go 1.18
 
