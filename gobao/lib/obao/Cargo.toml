@@ -1,0 +1,16 @@
+[package]
+name = "obao"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+# If you only wanted shared lib, you'd use only "cdylib".
+# If you only wanted static lib, you'd use only "staticlib".
+# This demo shows both.
+crate-type = ["cdylib", "staticlib" ]
+
+[dependencies]
+libc = "0.2.2"
+env_logger = "0.8.4"
+log = "0.4.14"
+bao = "0.12.1"
