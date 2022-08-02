@@ -3,8 +3,8 @@ cd lib/obao
 cargo build --release
 
 # Move the binary to the correct location
-STATIC_TARGET=libobao.a
-DYNAMIC_TARGET=libobao.so
+STATIC_TARGET=target/release/libobao.a
+DYNAMIC_TARGET=target/release/libobao.so
 
 # If the static target exists, move it up to the lib directory
 if [ -f $STATIC_TARGET ]; then

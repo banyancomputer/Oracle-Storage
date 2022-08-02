@@ -8,7 +8,7 @@ typedef struct ObaoData {
     // How long our obao is
     size_t obao_data_len;
     // How long our hash is (This is 32 bytes)
-    size_t hash_data_len = 32;
+    size_t hash_data_len;
 
 } ObaoData;
 
