@@ -3,22 +3,31 @@ package main
 import (
     "fmt"
 
-    "src/oracle_storage/backend"
-    "src/oracle_storage/processing"
+    "github.com/banyancomputer/oracle-storage/backend"
+    "github.com/banyancomputer/oracle-storage/gobao"
 )
 
 // Takes a file path in, processes it, and returns uploads data to S3.
-func oracle_storage(file_path string) {
-    // Process the file
-    deal_id, meta_data := processing.ProcessFile(file_path)
-
-    // Write the data to S3
-    backend.WriteToS3(deal_id, meta_data)
-
-    fmt.Println("Uploaded new deal: ", deal_id)
-}
-
-func main() {
-    // Test with a file in the current directory
-    oracle_storage("./test/ethereum.pdf")
+func Store(filename string, filesize int64, cid string) (error) {
+    // Process the file and get the hash
+    hash, err := processing.ProcessFile(filename, backend.ObaoTempStore)
+    if err != nil {
+        fmt.Println(err.Error())
+        return err
+    }
+   // Declare a MetaData struct to store the file's metadata
+    meta_data := backend.MetaData{
+        Cid: cid,
+        Hash: hash,
+        Size: filesize,
+    }
+   // Uplaod our Meta Data to S3
+   err = backend.WriteToS3(meta_data)
+    if err != nil {
+        fmt.Println(err.Error())
+        return err
+    }
+    // Delete the obao file
+    err = backend.DeleteObao(hash)
+    return nil
 }
