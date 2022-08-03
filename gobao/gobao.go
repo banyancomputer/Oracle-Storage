@@ -3,10 +3,7 @@ package processing
 import (
     "fmt"
     "os/exec"
-    "strconv"
     "strings"
-
-    "src/oracle_storage/backend"
 )
 
 
@@ -26,9 +23,9 @@ func get_hash(file_path string) (string) {
 // Encodes a file into an obao file
 // This file is saved in the system's 'ObaoTempStore' directory, which is 'temp/'
 // The  cid of the file is used to name the file
-func encode_obao(file_path string, hash string) (error) {
+func encode_obao(file_path string, hash string, output_dir string) (error) {
     // Determine the path of the obao file
-    obao_path := backend.ObaoTempStore + hash
+    obao_path := output_dir + hash
     // Generate an obao file for the file
     cmd := exec.Command("bao", "encode", file_path, "--outboard", obao_path)
     _, err := cmd.Output()
@@ -42,11 +39,9 @@ func encode_obao(file_path string, hash string) (error) {
 }
 
 // Takes a file in, returns the Blake3 hash and writes the obao to temporary storage, indexed by the hash
-func ProcessFile(file_path string) (string, error) {
-    println("Processing file: " + file_path)
-
+func ProcessFile(file_path string, output_dir string) (string, error) {
     hash := get_hash(file_path)
-    err := encode_obao(file_path, hash)
+    err := encode_obao(file_path, hash, output_dir)
     if err != nil {
         fmt.Println(err.Error())
     }

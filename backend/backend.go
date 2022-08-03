@@ -49,9 +49,10 @@ const timeout = time.Duration(10) * time.Second
 
 // Write our Meta-Data, Obao file, and Endpoint to S3 into their respective buckets
 // All data is indexed by the deal ID
-func WriteToS3(meta_data MetaData) {
+func WriteToS3(meta_data MetaData) (error) {
     // Initialize the S3 service client and context for the request
     sess := session.Must(session.NewSession(&aws.Config{
+        // TODO: Make these configurable
         Region: aws.String(aws_region)},
     ))
     svc := s3.New(sess)
@@ -69,11 +70,13 @@ func WriteToS3(meta_data MetaData) {
     err := write_meta_data(meta_data, svc, ctx)
     if err != nil {
         fmt.Println("Error writing meta-data:", err)
+        return err
     }
     // Write the Obao file to S3. The file is named by its Blake3 hash and is stored in the ObaoTempStore
     err = write_obao(meta_data.Hash, svc, ctx)
     if err != nil {
         fmt.Println("Error writing obao file:", err)
+        return err
     }
 //     // Write the endpoint to S3. TODO: This eventually needs to be updated to be a real endpoint
 //     default_endpoint := Endpoint{Host: "localhost", Port: 5001}
@@ -81,10 +84,11 @@ func WriteToS3(meta_data MetaData) {
 //     if err != nil {
 //         fmt.Println("Error writing endpoint:", err)
 //     }
+    return nil
 }
 
 // Writes the metadata to S3, indexes MetaData by the files CID
-func write_meta_data(cid string, meta_data MetaData, svc *s3.S3, ctx context.Context) (error) {
+func write_meta_data(meta_data MetaData, svc *s3.S3, ctx context.Context) (error) {
     // Upload the MetaData to S3 as a JSON object
     _, err := svc.PutObjectWithContext(ctx, &s3.PutObjectInput{
         Bucket: aws.String(meta_data_bucket),
@@ -139,6 +143,18 @@ func read_obao(obao_path string) (obao_bytes []byte, err error) {
     return body.Bytes(), nil
 }
 
+// Delete the obao file from temp storage
+func DeleteObao(hash string) (err error) {
+    obao_path := ObaoTempStore + hash
+    // Delete the obao file
+    err = os.Remove(obao_path)
+    if err != nil {
+        fmt.Println("Error deleting file:", err)
+        return err
+    }
+    return nil
+}
+
 // Write the contents of an obao file to S3, indexed by the file's Blake3 hash
 func write_obao(hash string, svc *s3.S3, ctx context.Context) (error) {
     obao_path := ObaoTempStore + hash
@@ -151,7 +167,7 @@ func write_obao(hash string, svc *s3.S3, ctx context.Context) (error) {
     // Upload the body buffer to S3
     _, err = svc.PutObjectWithContext(ctx, &s3.PutObjectInput{
         Bucket: aws.String(obao_bucket),
-        Key:    aws.String(cid),
+        Key:    aws.String(hash),
         Body:   aws.ReadSeekCloser(bytes.NewReader(body)),
     })
     return err
