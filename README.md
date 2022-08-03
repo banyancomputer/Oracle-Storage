@@ -17,12 +17,7 @@ $ go install .
 ```
 
 # Usage
-Right now, the repository processes and uploads the data for the `test/ethereum.pdf` file.
-
-```bash
-$ export PATH=$PATH:$(dirname $(go list -f '{{.Target}}' .))
-$ oracle_storage
-```
+Deploy AWS infrastructure with Terraform. Then call this library to generate obao files.
 
 # Testing
 ```bash
