@@ -3,12 +3,12 @@
 
 typedef struct ObaoData {
     // Pointers to our obao and Blake3 hash
-    const char *obao_data;
-    const char *hash_data;
+    const char *obao;
+    const char *hash;
     // How long our obao is
-    size_t obao_data_len;
+    size_t obao_len;
     // How long our hash is (This is 32 bytes)
-    size_t hash_data_len;
+    size_t hash_len;
 
 } ObaoData;
 
