@@ -1,15 +1,15 @@
 # Oracle-Storage
 
-> This repository is responsible for managing meta-data storage for our Oracel Ecosystem.
-> Therefore it:
-> - Manages the deployment of the AWS S3 buckets used for storing the meta-data, endpoints, and obao files.
-> - Implements a simple Go Library for preprocessing files.
+> This repository is responsible for managing meta-data storage for our Oracle Ecosystem.
+> This is a temporary repository until we move this storage on chain/onto providers machines.
+> It Implements:
+> - Managing the deployment of the AWS S3 buckets used for storing the meta-data and obao files.
+> - Implements a simple wrapper around a systems command line to generate obao files from Go.
 > - Writes processed meta-data and files to the S3 buckets.
 
 ## Dependencies
 For now, this repository is dependent on the following:
-- `bao`: The bao library must be accessible from the command line.
-- `ipfs`: The ipfs CLI must be accessible from the command line.
+- `bao`: The bao library must be accessible from the command line in order to generate obao files.
 
 # Building
 ```bash
@@ -17,11 +17,16 @@ $ go install .
 ```
 
 # Usage
-Right now, the repository processes and uploads the data for the `test/ethereum` file.
+Right now, the repository processes and uploads the data for the `test/ethereum.pdf` file.
 
 ```bash
 $ export PATH=$PATH:$(dirname $(go list -f '{{.Target}}' .))
 $ oracle_storage
+```
+
+# Testing
+```bash
+$ go test oracle_storage.go oracle_storage_test.go
 ```
 
 # Future Work
