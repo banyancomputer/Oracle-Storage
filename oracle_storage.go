@@ -1,4 +1,4 @@
-package main
+package oracle_storage
 
 import (
     "fmt"
