@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/../blake3_processing/.idea/blake3_processing.iml" filepath="$PROJECT_DIR$/../blake3_processing/.idea/blake3_processing.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../ipfs-proof-oracle/.idea/ipfs-proof-oracle.iml" filepath="$PROJECT_DIR$/../ipfs-proof-oracle/.idea/ipfs-proof-oracle.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/oracle-storage.iml" filepath="$PROJECT_DIR$/.idea/oracle-storage.iml" />
+    </modules>
+  </component>
+</project>
